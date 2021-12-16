@@ -1,3 +1,5 @@
+# Código criado por Lorenzo Saraiva. 
+
 import numpy as np
 import math
 import random
@@ -70,7 +72,7 @@ def generic_oracle(qc, var, output_qubit, target, n):
         if binary[i] == '0':
             qc.x(var[i])
 
-    # Marca a solução
+    # Faz o phase kickback para marcar a solução correta
     qc.mct(var, output_qubit)
 
 
@@ -114,10 +116,20 @@ def diffuser(qc, n, qubits, uncompute, prepare, v):
     # Aplica transformação |00..0> -> |s>
     qc.append(prepare, qubits[start: start + size])
 
-def groover(n, entries, uncompute, prepare):
-    # Cria os registros
+
+# Função principal que executa o Grover para todas as clausulas
+# Input:
+#   n - Número de qubits em um lado da base de dados
+#   entries - Número de pares
+#   uncompute - Sequência de gates para a transformação |s> -> |00..0> 
+#   prepare - Sequência de gates para a transformação |00..0> -> |s>
+
+def grover_complete(n, entries, uncompute, prepare):
+    
 
     size = n * 2
+
+    # Cria os registradores 
     var_qubits = QuantumRegister((size) * entries, name='v') # Define o registrador quântico que representa as variáveis
     output_qubit = QuantumRegister(1, name='out') # Define um qubit para o phase kickback
     c_bits = ClassicalRegister(n * entries, name='c') # Define um registrador clássico para ser feita a medição
@@ -166,53 +178,161 @@ def groover(n, entries, uncompute, prepare):
     print(qc)
     print(d)
 
-#QuantumCircuit.initialize = initialize
+
+# Função principal que executa o Grover para todas as clausulas
+# Input:
+#   n - Número de qubits em um lado da base de dados
+#   entries - Número de pares
+#   uncompute - Sequência de gates para a transformação |s> -> |00..0> 
+#   prepare - Sequência de gates para a transformação |00..0> -> |s>
 
 
-n = 2 # Numero de qubits pra cada parte
-entries = 2 ** n # numero de pares 
-ceil = entries ** 2 # valor máximo 
+def grover_single(n, entries, uncompute, prepare, pairs):
+    
 
-# Geração de pares aleatórios para a database
-l1 = []
-l2 = []
+    size = n * 2
 
-# Gera duas listas com valores 0 a 2^m
-for i in range(entries):
-    l1.append(i)
-    l2.append(i)
-
-# Embaralha as listas
-random.shuffle(l1)
-random.shuffle(l2)
-
-# Cria os pares aleatórios
-pairs = []
-for i in range(entries):
-    a = l1.pop()
-    b = l2.pop()
-    pairs.append([a, b])
-
-print(pairs)
-
-# Calcula o índice de cada par no vetor de estado
-indexes = []
-
-for i in range(entries):
-    indexes.append(pairs[i][0] * entries + pairs[i][1])
-
-# Prepara o vetor de estados de acordo com os índices calculados
-initial_state = [0] * ceil
-
-for i in range(entries):
-    initial_state[indexes[i]] = math.sqrt(1/entries)
-
-# Cria conjunto de gates |s> -> |00..0>  e |00..0> -> |s>
-init_instruction = Initialize(initial_state)
-
-inverse_init_gate = init_instruction.gates_to_uncompute()
-
-init_gate = inverse_init_gate.inverse()
+    # Cria os registradores 
+    var_qubits = QuantumRegister(size, name='v') # Define o registrador quântico que representa as variáveis
+    output_qubit = QuantumRegister(1, name='out') # Define um qubit para o phase kickback
+    c_bits = ClassicalRegister(n, name='c') # Define um registrador clássico para ser feita a medição
 
 
-groover(n, entries, inverse_init_gate, init_gate)
+    qc = QuantumCircuit(var_qubits, output_qubit, c_bits)  # Cria o circuito quântico
+
+    
+    # Prepara o estado quântico correto em N grupos de 2n qubits   
+    qc.append(prepare, var_qubits) 
+        
+
+    qc.initialize([1, -1]/np.sqrt(2), output_qubit) # Prepara o qubit de phase kickback no estado correto
+
+    num_iterations = math.floor(((math.pi) * math.sqrt(entries))/4) # Calcula o numero ótimo de iterações do GSA
+    
+    target = random.randint(0, entries - 1)
+
+    # Loop do GSA
+
+    for i in range(num_iterations):
+        generic_oracle(qc, var_qubits[:n], output_qubit, target, n)  # Aplica oráculo nos qubits de busca
+                  
+        qc.barrier() 
+
+        diffuser(qc, n, var_qubits, uncompute, prepare, 0)  # Aplica o difusor
+
+    
+        qc.measure(var_qubits[n:], c_bits) # Faz a medições
+        qc.barrier()
+
+    
+
+    qc.barrier()
+
+    # Simulação do circuito
+    shots = 1000
+    qasm_simulator = Aer.get_backend('qasm_simulator')
+    transpiled_qc = transpile(qc, qasm_simulator)
+    qobj = assemble(transpiled_qc)
+    result = qasm_simulator.run(qobj, shots = shots).result() # Circuito simulado 1000 vezes
+
+    # Coleta e imprime os resultados e o circuito
+    d = dict(sorted(result.get_counts().items(), key=lambda item: item[1]))
+
+    # Verifica qual era a resposta correta
+    answer = -1
+
+    for i in range(len(pairs)):
+        pair = pairs[i]
+        if pair[1] == target:
+            answer = pair[0]
+
+    # Pega o resultado mais frequente e sua frequência
+    top_result = list(d.keys())[-1]
+    accuracy = list(d.values())[-1]/shots
+
+    threshold = 0.5
+
+    # caso o resultado esteja correto e a frequência seja maior que o limite, retorna True
+    # caso contrário, retorna False
+
+    print(qc)
+    print(d)
+
+
+    print("Testes:")
+    print(top_result)
+    print(target)
+    print(to_bin(answer, n))
+    print(accuracy)
+
+    if top_result == to_bin(answer, n) and accuracy > threshold:
+        return True
+    else:
+        return False
+
+
+
+# Função que cria os pares aleatórios e chama o Grover
+# Input:
+#   n - Número de qubits em um lado da base de dados
+#   is_single - Booleano que marca se é uma execução individual ou o algoritmo completo
+
+def execute(n, is_single):
+
+    n = 2 # Numero de qubits pra cada parte
+    entries = 2 ** n # numero de pares
+
+    power = 1;
+    while power < entries:
+        power = power * 2; 
+
+    ceil = power ** 2 # valor máximo 
+
+    # Geração de pares aleatórios para a database
+    l1 = []
+    l2 = []
+
+    # Gera duas listas com valores 0 a 2^m
+    for i in range(entries):
+        l1.append(i)
+        l2.append(i)
+
+    # Embaralha as listas
+    random.shuffle(l1)
+    random.shuffle(l2)
+
+    # Cria os pares aleatórios
+    pairs = []
+    for i in range(entries):
+        a = l1.pop()
+        b = l2.pop()
+        pairs.append([a, b])
+
+    print(pairs)
+
+    # Calcula o índice de cada par no vetor de estado
+    indexes = []
+
+    for i in range(entries):
+        indexes.append(pairs[i][0] * power + pairs[i][1])
+
+    # Prepara o vetor de estados de acordo com os índices calculados
+    initial_state = [0] * ceil
+
+    for i in range(entries):
+        initial_state[indexes[i]] = math.sqrt(1/entries)
+
+    # Cria conjunto de gates |s> -> |00..0>  e |00..0> -> |s>
+    init_instruction = Initialize(initial_state)
+
+    inverse_init_gate = init_instruction.gates_to_uncompute()
+
+    init_gate = inverse_init_gate.inverse()
+
+    if is_single:
+        grover_single(n, entries, inverse_init_gate, init_gate, pairs)
+    else:
+        grover_complete(n, entries, inverse_init_gate, init_gate)
+
+
+execute(2, True)
