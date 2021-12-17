@@ -2,6 +2,9 @@
 # Módulo de testes
 
 from complete import execute
+from complete import grover_single
+from complete import grover_complete
+import time
 
 
 # Testes singulares
@@ -11,10 +14,19 @@ from complete import execute
 
 limite = 10
 
-# 
+# Loop que testa execução singular aumentando gradualmente o número de qubits
 for atomics in range(2, limite):
 
-	result = execute(i, True)
+	start_time = time.time()
+
+	result = execute(atomics, True)
+	
+	execution_time = time.time() - start_time
+
+	if result == False:
+		print("Erro na execução única com " + str(atomics) + " qubits. Duração: " + str(execution_time))
+	else:
+		print(str(atomics) + " qubits -- OK. Duração: " + str(execution_time))
 
 # Testes completos
 # Aqui é testado o algoritmo completo 
@@ -22,7 +34,13 @@ for atomics in range(2, limite):
 
 limite = 4
 
-
+exit()
 for atomics in range(2, limite):
 
 	result = execute(i, False)
+
+
+
+
+#
+

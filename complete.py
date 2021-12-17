@@ -4,6 +4,7 @@ import numpy as np
 import math
 import random
 from initialize import Initialize
+from operator import itemgetter
 
 from qiskit import IBMQ, Aer, assemble, transpile
 from qiskit.providers.aer import AerSimulator
@@ -124,7 +125,7 @@ def diffuser(qc, n, qubits, uncompute, prepare, v):
 #   uncompute - Sequência de gates para a transformação |s> -> |00..0> 
 #   prepare - Sequência de gates para a transformação |00..0> -> |s>
 
-def grover_complete(n, entries, uncompute, prepare):
+def grover_complete(n, entries, uncompute, prepare, pairs):
     
 
     size = n * 2
@@ -147,8 +148,8 @@ def grover_complete(n, entries, uncompute, prepare):
 
 
     num_iterations = math.floor(((math.pi) * math.sqrt(entries))/4) # Calcula o numero ótimo de iterações do GSA
-    
 
+    
     # Loop do GSA
 
     for v in range(entries): 
@@ -168,15 +169,50 @@ def grover_complete(n, entries, uncompute, prepare):
     qc.barrier()
 
     # Simulação do circuito
+    shots = 1000
     qasm_simulator = Aer.get_backend('qasm_simulator')
     transpiled_qc = transpile(qc, qasm_simulator)
     qobj = assemble(transpiled_qc)
-    result = qasm_simulator.run(qobj, shots = 1000).result() # Circuito simulado 1000 vezes
+    result = qasm_simulator.run(qobj, shots = shots).result() # Circuito simulado 1000 vezes
 
     # Coleta e imprime os resultados e o circuito
     d = dict(sorted(result.get_counts().items(), key=lambda item: item[1]))
     print(qc)
     print(d)
+
+
+    # Calcula a resposta correta
+    pairs = sorted(pairs, key=itemgetter(1))
+    pairs.reverse()
+    answer = ""
+
+    for pair in pairs: 
+        answer = answer + str(to_bin(pair[0], n))
+
+    print(answer)
+
+    # Pega o resultado mais frequente e sua frequência
+    top_result = list(d.keys())[-1]
+    accuracy = list(d.values())[-1]/shots
+
+    threshold = 0.5
+
+    # caso o resultado esteja correto e a frequência seja maior que o limite, retorna True
+    # caso contrário, retorna False
+
+    print(qc)
+    print(d)
+
+
+    print("Testes:")
+    print(top_result)
+    print(accuracy)
+
+    if top_result == answer and accuracy > threshold:
+        return True
+    else:
+        return False
+
 
 
 # Função principal que executa o Grover para todas as clausulas
@@ -221,11 +257,11 @@ def grover_single(n, entries, uncompute, prepare, pairs):
         diffuser(qc, n, var_qubits, uncompute, prepare, 0)  # Aplica o difusor
 
     
-        qc.measure(var_qubits[n:], c_bits) # Faz a medições
+        # Faz a medições
         qc.barrier()
 
     
-
+    qc.measure(var_qubits[n:], c_bits) 
     qc.barrier()
 
     # Simulação do circuito
@@ -279,7 +315,6 @@ def grover_single(n, entries, uncompute, prepare, pairs):
 
 def execute(n, is_single):
 
-    n = 2 # Numero de qubits pra cada parte
     entries = 2 ** n # numero de pares
 
     power = 1;
@@ -330,9 +365,9 @@ def execute(n, is_single):
     init_gate = inverse_init_gate.inverse()
 
     if is_single:
-        grover_single(n, entries, inverse_init_gate, init_gate, pairs)
+        return(grover_single(n, entries, inverse_init_gate, init_gate, pairs))
     else:
-        grover_complete(n, entries, inverse_init_gate, init_gate)
+        grover_complete(n, entries, inverse_init_gate, init_gate, pairs)
 
 
-execute(2, True)
+execute(2, False)

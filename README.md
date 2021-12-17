@@ -9,11 +9,11 @@ O programa é um algoritmo constrói um circuito quântico para realizar a verfi
 
 Projeto do Programa
 
-O programa é composto de dois módulos:
+O programa é composto pelos seguintes módulos:
 
 - initialize.py - O initialize.py é um módulo do Qiskit para inicializar estados quânticos arbitrários com algumas modificações. 
 - main.py - O main.py contém a parte principal, onde é feita a montagem e execução do circuito.  
-
+- tests.py - O tests.py contém uma sequência automatizada dos testes 
 
 Roteiro de Teste:
 
