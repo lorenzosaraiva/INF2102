@@ -1,20 +1,32 @@
 # Código criado por Lorenzo Saraiva
-# Módulo de testes
+###############  Módulo de testes  ############### 
 
-from grover import grover_single
-from grover import grover_complete
+from grover import grover_search_algorithm
+
 from utils import to_bin
 from operator import itemgetter
-
 
 import time
 import random
 import math
 
-def execute(n, is_single):
+def execute(n, is_single, shots, threshold):
+	"""Função que gera aleatoriamente um conjunto de pares e executa o Grover
+    
+    Parâmetros:
+        n (int): Número de qubits em um lado da base de dados entrelaçada
+        is_single(bool): Booleano que marca se é uma execução única ou completa
+        shots(int): Número de execuções do circuito
+        threshold(float): Valor de 0 a 1 que representa o valor de precisão mínima
+        	para que a execução seja considerada de sucesso
+ 	
+ 	Retorno:
+ 		bool: Booleano relativo ao sucesso da execução
+    """
 
 	entries = 2 ** n # numero de pares
 
+	# caso o número de pares não seja potência de 2, calcula a potência mais próxima
 	power = 1;
 	while power < entries:
 		power = power * 2; 
@@ -41,8 +53,6 @@ def execute(n, is_single):
 		b = l2.pop()
 		pairs.append([a, b])
 
-	print(pairs)
-
 	# Calcula o índice de cada par no vetor de estado
 	indexes = []
 
@@ -55,70 +65,54 @@ def execute(n, is_single):
 	for i in range(entries):
 		initial_state[indexes[i]] = math.sqrt(1/entries)
 
-
-
-	answer_dict = ""
-	shots = 1000
+	variables = entries
 
 	if is_single:
+		variables = 1
 
-		target = random.randint(0, entries - 1)
+	target = random.randint(0, entries - 1)
 
-		answer_dict = grover_single(n, entries, initial_state, target, shots)
+	answer_dict = grover_search_algorithm(n, entries, initial_state, variables, target, shots)
 
-		answer = compute_answer(answer_dict, pairs, is_single, target, n)
+	answer = compute_answer(answer_dict, pairs, is_single, target, n)
 
-		# Pega o resultado mais frequente e sua frequência
-		top_result = list(answer_dict.keys())[-1]
-		accuracy = list(answer_dict.values())[-1]/shots
+	# Pega o resultado mais frequente e sua frequência
+	top_result = list(answer_dict.keys())[-1]
+	accuracy = list(answer_dict.values())[-1]/shots
 
-		threshold = 0.5
+	print("Testes:")
+	print(top_result)
+	print(target)
+	print(answer)
+	print(accuracy)
 
-
-		print("Testes:")
-		print(top_result)
-		print(target)
-		print(answer)
-		print(accuracy)
-
-		if top_result == answer and accuracy > threshold:
-			return True
-		else:
-			return False
+	if top_result == answer and accuracy > threshold:
+		return accuracy
 	else:
-
-		answer_dict = grover_complete(n, entries, initial_state)
-
-		answer = compute_answer(answer_dict, pairs, is_single, 0, n)
-		
-
-		print(answer)
-
-		# Pega o resultado mais frequente e sua frequência
-		top_result = list(answer_dict.keys())[-1]
-		accuracy = list(answer_dict.values())[-1]/shots
-
-		threshold = 0.5
-
-		# caso o resultado esteja correto e a frequência seja maior que o limite, retorna True
-		# caso contrário, retorna False
-
-
-		print("Testes:")
-		print(top_result)
-		print(accuracy)
-
-		if top_result == answer and accuracy > threshold:
-			return True
-		else:
-			return False 
+		return 0
 
 def compute_answer(answer_dict, pairs, is_single, target, n):  	
+	"""Função que verifica a resposta correta a partir dos pares
+		para checar se a execução foi um sucesso
+    
+    Parâmetros:
+    	answer_dict(dict): Dicionário com os resultados da execução do circuito
+    	pairs([[int, int]]: Lista de pares que representam o sequente
+        is_single(bool): Booleano que marca se é uma execução única ou completa
+        target(int): Caso seja a execução única, qual será o par procurado
+        n(int): Número de qubits em um lado da base de dados entrelaçada
+ 	
+ 	Retorno:
+ 		bin: Resposta correta em binário
 
+    """
+
+    # Verifica se é execução única
 	if is_single:
-		# Verifica qual era a resposta correta
+		
 		answer = -1
 
+		# Procura o par que está sendo buscado
 		for i in range(len(pairs)):
 			pair = pairs[i]
 			if pair[1] == target:
@@ -127,45 +121,67 @@ def compute_answer(answer_dict, pairs, is_single, target, n):
 		return to_bin(answer, n)
 
 	else:
-		# Calcula a resposta correta
+		
 		pairs = sorted(pairs, key=itemgetter(1))
 		pairs.reverse()
 		answer = ""
 
+		# Computa a resposta correta
 		for pair in pairs: 
 			answer = answer + str(to_bin(pair[0], n))
 
 		return answer
 
+def test(single_limit, single_shots, single_precision, complete_limit, complete_shots, complete_precision):
+	""" Função que executa conjunto de testes para execução única e execução completa
+		de 2 cláusulas atômicas até o limite informado e gera um log com os resultados
 
+    Parâmetros:
+    	single_limit(int): Número de claúsulas atômicas máximo para a execução única
+    	single_shots(int): Número de execuções do circuito em cada teste para a execução única
+        single_precision(int): Precisão mínima para que uma execução única seja considerada um sucesso
+        complete_limit(int): Número de claúsulas atômicas máximo para a execução completa
+        complete_shots(int): Número de execuções do circuito em cada teste para a execução completa
+ 		complete_precision(int): Precisão mínima para que uma execução completa seja considerada um sucesso
 
-# Testes singulares
-# Aqui é testado o equivalente a um passo do algoritmo. 
-# Esses testes existem para verificar se a implementação do Alsing funciona para maior número de qubits
+    """
 
+	f = open("test_results.txt", "w")
 
-limite = 5
+	# Testes únicos
+	# Aqui é testado um único passo do algoritmo, portanto podem ser feitos testes com mais qubits
+	# Loop que testa execução singular aumentando gradualmente o número de qubits
+	for atomics in range(2, single_limit + 1):
 
-# Loop que testa execução singular aumentando gradualmente o número de qubits
-for atomics in range(2, limite):
+		start_time = time.time()
 
-	start_time = time.time()
+		result = execute(atomics, True, single_shots, single_precision)
+		
+		execution_time = time.time() - start_time
 
-	result = execute(atomics, False)
+		if result == 0:
+			f.write("Erro na execução única com " + str(atomics) + " qubits. Duração: " + str(execution_time) + "\n")
+		else:
+			f.write(str(atomics) + " qubits única -- OK. Precisão: " + str(result) + " Duração: " + str(execution_time) + "\n")
+		
 	
-	execution_time = time.time() - start_time
+	
+	# Testes completos
+	# Aqui é testado o algoritmo completo 
+	# Esses testes são limitados pela disponibilidade de computadores quânticos e/ou memória RAM para simular
+	for atomics in range(2, complete_limit + 1):
 
-	if result == False:
-		print("Erro na execução única com " + str(atomics) + " qubits. Duração: " + str(execution_time))
-	else:
-		print(str(atomics) + " qubits -- OK. Duração: " + str(execution_time))
-	break
-# Testes completos
-# Aqui é testado o algoritmo completo 
-# Esses testes são limitados pela disponibilidade de computadores quânticos e/ou memória RAM para simular
+		start_time = time.time()
+		
+		result = execute(atomics, False, complete_shots, complete_precision)
+		
+		execution_time = time.time() - start_time
 
-# limite = 4
+		if result == 0:
+			f.write("Erro na execução completa com " + str(atomics) + " qubits. Duração: " + str(execution_time) + "\n")
+		else:
+			f.write(str(atomics) + " qubits completa -- OK. Precisão: " + str(result) + " Duração: " + str(execution_time) + "\n")
+			
 
-# for atomics in range(2, limite):
 
-# 	result = execute(i, False)
+test(4, 1000, 0.5, 2, 1000, 0.5)

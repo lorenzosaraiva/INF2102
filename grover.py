@@ -1,60 +1,60 @@
 # Código criado por Lorenzo Saraiva. 
+###############  Módulo do Grover Search Algorithm  ############### 
 
 import numpy as np
 import math
-import random
+
 from initialize import Initialize
 from utils import reverse, to_bin
 
-from qiskit import IBMQ, Aer, assemble, transpile
-from qiskit.providers.aer import AerSimulator
+from qiskit import Aer, assemble, transpile
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
-from qiskit.providers.ibmq import least_busy
-from qiskit.circuit.equivalence_library import SessionEquivalenceLibrary as sel
-from qiskit.transpiler.passes import BasisTranslator
-from qiskit.converters import circuit_to_dag, dag_to_circuit
-from qiskit.circuit.library import MCMT
 
 
-###############  Funções relativas ao Grover Search Algorithm  ############### 
 
-# Função que constrói um oráculo dinamicamente para a iteração do Grover
-# Input:
-#   qc - Circuito quântico que será modificado
-#   var - Qubits sobre os quais será feito o oráculo
-#   output_qubit - Qubit utilizado para o phase kickback
-#   target - Valor a ser procurado pelo oráculo
-#   n - número de qubits em var
 
-def generic_oracle(qc, var, output_qubit, target, n):
+def generic_oracle(qc, search_qubits, output_qubit, target, n):
+    """Função que constrói um oráculo dinamicamente para a iteração do Grover
+    
+    Parâmetros:
+        qc (QuantumCircuit): Circuito quântico que será modificado
+        search_qubits (QuantumRegister): Qubits que representam a parte da busca 
+            nos quais o Oráculo do GSA será aplicado
+        output_qubit (QuantumRegister): Qubit que foi preparado para ser o alvo
+            do phase kickback
+        target(int): Valor que para qual o Oráculo irá fazer o phase kickback
+        n(int): Número de qubits em um lado da base de dados entrelaçada
+    """
 
+    # Converte o target para binário
     binary = reverse(to_bin(target, n))
 
-    # Onde tem zeros, faz o Pauli-X
+    # Onde tem zeros, faz um gate Pauli-X
     for i in range(n):
         if binary[i] == '0':
-            qc.x(var[i])
+            qc.x(search_qubits[i])
 
-    # Faz o phase kickback para marcar a solução correta
-    qc.mct(var, output_qubit)
+    # Utiliza um gate Multi-controlled Toffolli para fazer o phase kickback e marcar a solução correta
+    qc.mct(search_qubits, output_qubit)
 
 
     # Desfaz as mudanças
     for i in range(n):
         if binary[i] == '0':
-            qc.x(var[i])
+            qc.x(search_qubits[i])
 
-# Função que constrói um difusor  para a iteração do Grover
-# Input:
-#   qc - Circuito quântico que será modificado
-#   n - Número de qubits 
-#   qubits - Qubits que serão afetados pelo difusor
-#   uncompute - Sequência de gates para a transformação |s> -> |00..0> 
-#   prepare - Sequência de gates para a transformação |00..0> -> |s>
-#   v - Índice da variável que está sendo buscada
 
 def diffuser(qc, n, qubits, uncompute, prepare, v):
+    """Função que constrói um difusor para a iteração do Grover
     
+    Parâmetros:
+        qc (QuantumCircuit): Circuito quântico que será modificado
+        n(int): Número de qubits em um lado da base de dados entrelaçada
+        qubits (QuantumRegister): Qubits nos quais será aplicado o difusor
+        uncompute (QuantumCircuit): Circuito para a transformação |s> -> |00..0> 
+        prepare(QuantumCircuit): Circuito para a transformação |00..0> -> |s>
+        v(int): Número da cláusula atômica que está sendo buscada
+    """
 
     size = n * 2
     start = v * size
@@ -80,137 +80,81 @@ def diffuser(qc, n, qubits, uncompute, prepare, v):
     qc.append(prepare, qubits[start: start + size])
 
 
-# Função principal que executa o Grover para todas as clausulas
-# Input:
-#   n - Número de qubits em um lado da base de dados
-#   entries - Número de pares
-#   initial_state - Estado quântico inicial
+def grover_search_algorithm(n, entries, initial_state, variables, target, shots):
+    """Função principal que execute o Grover Search Algorithm
 
-def grover_complete(n, entries, initial_state):
+    Parâmetros:
+        n(int): Número de qubits em um lado da base de dados entrelaçada
+        entries(int): Número de cláusulas atômicas
+        initial_state ([float]): Vetor que representa o estado quântico
+        variables (int): Número de claúsulas atômicas a serem buscadas
+        target(int): Caso seja uma execução única, o número da claúsula atômica
+            que será buscada o par
+        shots(int): Número de execuções do circuito
 
-	# Cria conjunto de gates |s> -> |00..0>  e |00..0> -> |s>
+    Retorno:
+        answer_dict(dict): Dicionário com os resultados da execução do circuito
+
+    """
+
+    # Cria conjunto de gates |00..0> -> |initial_state> e |initial_state> -> |00..0> 
     init_instruction = Initialize(initial_state)
 
     uncompute = init_instruction.gates_to_uncompute()
 
     prepare = uncompute.inverse()
     
-
     size = n * 2
 
     # Cria os registradores 
-    var_qubits = QuantumRegister((size) * entries, name='v') # Define o registrador quântico que representa as variáveis
+    var_qubits = QuantumRegister((size) * variables, name='v') # Define o registrador quântico que representa as variáveis
     output_qubit = QuantumRegister(1, name='out') # Define um qubit para o phase kickback
-    c_bits = ClassicalRegister(n * entries, name='c') # Define um registrador clássico para ser feita a medição
-
+    c_bits = ClassicalRegister(n * variables, name='c') # Define um registrador clássico para ser feita a medição
 
     qc = QuantumCircuit(var_qubits, output_qubit, c_bits)  # Cria o circuito quântico
 
     
-    # Prepara o estado quântico correto em N grupos de 2n qubits
-    for i in range(entries):   
-        qc.append(prepare, var_qubits[i * entries: i * entries + size]) 
+    # Prepara o estado quântico correto em 'variables' grupos de 'size' qubits
+    for i in range(variables):   
+        qc.append(prepare, var_qubits[i * size: i * size + size]) 
         
 
     qc.initialize([1, -1]/np.sqrt(2), output_qubit) # Prepara o qubit de phase kickback no estado correto
 
 
     num_iterations = math.floor(((math.pi) * math.sqrt(entries))/4) # Calcula o numero ótimo de iterações do GSA
-
-    
+  
     # Loop do GSA
 
-    for v in range(entries): 
+    for v in range(variables): 
+
         for i in range(num_iterations):
-            generic_oracle(qc, var_qubits[v * size: v * size + n], output_qubit, v, n)  # Aplica Oracle oráculo nos qubits de busca
-                      
+
+            # Aplica Oracle oráculo nos qubits de busca
+            if variables == 1:
+                generic_oracle(qc, var_qubits[v * size: v * size + n], output_qubit, target, n)  
+            else:
+                generic_oracle(qc, var_qubits[v * size: v * size + n], output_qubit, v, n)          
+            
+
             qc.barrier() 
 
             diffuser(qc, n, var_qubits, uncompute, prepare, v)  # Aplica o difusor
-
-        
-            qc.measure(var_qubits[v * size + n:v * size + 2 * n], c_bits[v * n:v * n + n]) # Faz a medições
             qc.barrier()
-
-    
-
-    qc.barrier()
-
-    # Simulação do circuito
-    shots = 1000
-    qasm_simulator = Aer.get_backend('qasm_simulator')
-    transpiled_qc = transpile(qc, qasm_simulator)
-    qobj = assemble(transpiled_qc)
-    result = qasm_simulator.run(qobj, shots = shots).result() # Circuito simulado 1000 vezes
-
-    # Coleta e imprime os resultados e o circuito
-    d = dict(sorted(result.get_counts().items(), key=lambda item: item[1]))
-
-    return d
-   
-
-# Função principal que executa o Grover para todas as clausulas
-# Input:
-#   n - Número de qubits em um lado da base de dados
-#   entries - Número de pares
-#   uncompute - Sequência de gates para a transformação |s> -> |00..0> 
-#   prepare - Sequência de gates para a transformação |00..0> -> |s>
-
-
-def grover_single(n, entries, initial_state, target, shots):
-    
-   	# Cria conjunto de gates |s> -> |00..0>  e |00..0> -> |s>
-    init_instruction = Initialize(initial_state)
-
-    uncompute = init_instruction.gates_to_uncompute()
-
-    prepare = uncompute.inverse()
-
-    size = n * 2
-
-    # Cria os registradores 
-    var_qubits = QuantumRegister(size, name='v') # Define o registrador quântico que representa as variáveis
-    output_qubit = QuantumRegister(1, name='out') # Define um qubit para o phase kickback
-    c_bits = ClassicalRegister(n, name='c') # Define um registrador clássico para ser feita a medição
-
-
-    qc = QuantumCircuit(var_qubits, output_qubit, c_bits)  # Cria o circuito quântico
-
-    
-    # Prepara o estado quântico correto em N grupos de 2n qubits   
-    qc.append(prepare, var_qubits) 
         
+        qc.measure(var_qubits[v * size + n:v * size + 2 * n], c_bits[v * n:v * n + n]) # Faz as medições
+            
 
-    qc.initialize([1, -1]/np.sqrt(2), output_qubit) # Prepara o qubit de phase kickback no estado correto
-
-    num_iterations = math.floor(((math.pi) * math.sqrt(entries))/4) # Calcula o numero ótimo de iterações do GSA
-
-    # Loop do GSA
-
-    for i in range(num_iterations):
-        generic_oracle(qc, var_qubits[:n], output_qubit, target, n)  # Aplica oráculo nos qubits de busca
-                  
-        qc.barrier() 
-
-        diffuser(qc, n, var_qubits, uncompute, prepare, 0)  # Aplica o difusor
-
-    
-        # Faz a medições
-        qc.barrier()
-
-    
-    qc.measure(var_qubits[n:], c_bits) 
     qc.barrier()
 
     # Simulação do circuito
-    shots = 1000
-    qasm_simulator = Aer.get_backend('qasm_simulator')
-    transpiled_qc = transpile(qc, qasm_simulator)
-    qobj = assemble(transpiled_qc)
-    result = qasm_simulator.run(qobj, shots = shots).result() # Circuito simulado 1000 vezes
+    qasm_simulator = Aer.get_backend('qasm_simulator') # Escolhe o simulador 
+    transpiled_qc = transpile(qc, qasm_simulator) # Faz o transpiling para o simulador escolhido
+    qobj = assemble(transpiled_qc) 
+    result = qasm_simulator.run(qobj, shots = shots).result() # Executa o circuito 'shots' vezes
 
-    # Coleta e imprime os resultados e o circuito
-    d = dict(sorted(result.get_counts().items(), key=lambda item: item[1]))
-
-    return d
     
+    
+    answer_dict = dict(sorted(result.get_counts().items(), key=lambda item: item[1])) # Coleta e ordena os resultados da execução
+
+    return answer_dict

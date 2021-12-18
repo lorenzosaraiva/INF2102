@@ -1,37 +1,41 @@
-###############  Funções auxiliares ############### 
+###############  Módulo auxiliar ############### 
 
-
-# Função auxiliar para converter números decimais para binário
-# Input:
-#   x - número a ser convertido
-#   n - número de dígitos a serem utilizados
-
-# Output:
-#   número convertido para binário na quantidade informada de dígitos
 
 def to_bin (x, n = 0):
-    return format(x, 'b').zfill(n)
+	"""Função  para converter números decimais para binário
+	
+	Parâmetros:
+		x(int): Número a ser convertido
+		n(int): Número de dígitos a serem utilizados
+	
+	Retorno:
+		Número 'x' convertido para binário utilizando 'n' dígitos
+	"""
+	return format(x, 'b').zfill(n)
 
-
-# Função auxiliar para inverter array
-# Input:
-#   x - array a ser invertido
-
-# Output:
-#   array invertido
 
 def reverse(x):
-  return x[::-1]
+	"""Função para inverter lista
+	
+	Parâmetros:
+		x(list):lista a ser invertida
+	  
+	
+	Retorno:
+		lista 'x' invertida
+	"""
+	return x[::-1]
 
-
-# Função auxiliar para converter números binários para decimal
-# Input:
-#   n - número a ser convertido
-
-# Output:
-#   número convertido para decimal
 
 def binaryToDecimal(n):
-    return int(n,2)
+	"""Função para converter números binários para decimal
+	
+	Parâmetros:
+		n(binário): Número a ser convertido
+	  
+	
+	Retorno:
+		Número 'n' convertido para decimal
+	"""
+	return int(n,2)
 
-############### Fim funções auxiliares ######################
