@@ -1,0 +1,26 @@
+Locais:
+
+
+'aer_simulator' --- Funciona OK, velocidade parecida,  Completo 3qubits - insuficient memory
+'aer_simulator_statevector' -- Funciona OK, velocidade parecida,  Completo 3qubits - insuficient memory
+'aer_simulator_density_matrix' -- Funciona OK, Completo 2qubits - insuficiente
+'aer_simulator_stabilizer' -- Não tem um conjunto base de gates
+'aer_simulator_matrix_product_state' -- Baixíssima accuracy no completo 2 qubits, roda o 3qubits completamente random
+'aer_simulator_extended_stabilizer' -- Não tem um conjunto base de gates
+'aer_simulator_unitary' -- Não tem um conjunto base de gates
+'aer_simulator_superop' -- Não tem um conjunto base de gates
+'statevector_simulator' -- Baixíssima accuracy
+'unitary_simulator' -- Não tem um conjunto base de gates
+'pulse_simulator'
+'qasm_simulator' -- Funciona OK, velocidade parecida,  Completo 3qubits - insuficient memory
+
+
+IBM:
+
+'simulator_stabilizer' - não tem conjunto base de gates
+
+
+
+
+
+

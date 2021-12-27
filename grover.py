@@ -9,9 +9,10 @@ from utils import reverse, to_bin
 
 from qiskit import Aer, assemble, transpile
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
+from qiskit import IBMQ
 
-
-
+# Token do account da IBM
+TOKEN = "e492922085ef19c9a6385f62e574331f4d14fed52b4cf22c1602b07926149ccdec378bc33fe141b02236cd93b127edc0bfd607ac533cb864b3ab80368aabfa87"
 
 def generic_oracle(qc, search_qubits, output_qubit, target, n):
     """Função que constrói um oráculo dinamicamente para a iteração do Grover
@@ -80,7 +81,7 @@ def diffuser(qc, n, qubits, uncompute, prepare, v):
     qc.append(prepare, qubits[start: start + size])
 
 
-def grover_search_algorithm(n, entries, initial_state, variables, target, shots):
+def grover_search_algorithm(n, entries, initial_state, variables, target, shots, is_local, device):
     """Função principal que execute o Grover Search Algorithm
 
     Parâmetros:
@@ -91,6 +92,9 @@ def grover_search_algorithm(n, entries, initial_state, variables, target, shots)
         target(int): Caso seja uma execução única, o número da claúsula atômica
             que será buscada o par
         shots(int): Número de execuções do circuito
+        is_local(bool): Booleano que marca se a execução é local ou no backend da IBM
+        device(str): Nome do simulador ou computador quântico onde o programa será
+            executado
 
     Retorno:
         answer_dict(dict): Dicionário com os resultados da execução do circuito
@@ -148,13 +152,23 @@ def grover_search_algorithm(n, entries, initial_state, variables, target, shots)
     qc.barrier()
 
     # Simulação do circuito
-    qasm_simulator = Aer.get_backend('qasm_simulator') # Escolhe o simulador 
-    transpiled_qc = transpile(qc, qasm_simulator) # Faz o transpiling para o simulador escolhido
+    backend = ""
+    if is_local:
+        backend = Aer.get_backend(device) # Escolhe o simulador 
+    else:
+        IBMQ.save_account(TOKEN, overwrite=True)
+        provider = IBMQ.load_account()
+        backend = provider.get_backend(device)
+
+   
+    transpiled_qc = transpile(qc, backend) # Faz o transpiling para o simulador escolhido
     qobj = assemble(transpiled_qc) 
-    result = qasm_simulator.run(qobj, shots = shots).result() # Executa o circuito 'shots' vezes
+    result = backend.run(qobj, shots = shots).result() # Executa o circuito 'shots' vezes
 
     
-    
+
     answer_dict = dict(sorted(result.get_counts().items(), key=lambda item: item[1])) # Coleta e ordena os resultados da execução
 
+    # print(qc)
+    # print(answer_dict)
     return answer_dict
