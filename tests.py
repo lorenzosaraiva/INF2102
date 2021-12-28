@@ -10,11 +10,11 @@ import time
 import random
 import math
 
-def execute(n, is_single, shots, threshold, is_local, device):
+def execute(entries, is_single, shots, threshold, is_local, device):
 	"""Função que gera aleatoriamente um conjunto de pares e executa o Grover
     
     Parâmetros:
-        n (int): Número de qubits em um lado da base de dados entrelaçada
+        entries (int): Número de pares na base de dados entrelaçada
         is_single(bool): Booleano que marca se é uma execução única ou completa
         shots(int): Número de execuções do circuito
         threshold(float): Valor de 0 a 1 que representa o valor de precisão mínima
@@ -27,7 +27,7 @@ def execute(n, is_single, shots, threshold, is_local, device):
  		bool: Booleano relativo ao sucesso da execução
     """
 
-	entries = 2 ** n # numero de pares
+	n = math.ceil(math.log(entries, 2)) # numero de qubits necessários
 
 	# caso o número de pares não seja potência de 2, calcula a potência mais próxima
 	power = 1;
@@ -92,7 +92,7 @@ def execute(n, is_single, shots, threshold, is_local, device):
 	print(answer)
 	print(accuracy)
 
-	if top_result == answer and accuracy > threshold:
+	if top_result == answer:
 		return accuracy
 	else:
 		return 0
@@ -171,7 +171,7 @@ def tests(single_start, single_limit, single_shots, single_precision, complete_s
 		
 		execution_time = time.time() - start_time
 
-		log(True, device, atomics, execution_time, shots, result, f)
+		log(True, device, atomics, execution_time, single_shots, result, f)
 	
 	
 	# Testando o algoritmo completo 
@@ -184,15 +184,15 @@ def tests(single_start, single_limit, single_shots, single_precision, complete_s
 		
 		execution_time = time.time() - start_time
 
-		log(False, device, atomics, execution_time, shots, result, f)
+		log(False, device, atomics, execution_time, complete_shots, result, f)
 			
-def single_test(is_single, device, qubits, is_local, shots, precision):
+def single_test(is_single, device, entries, is_local, shots, precision):
 	""" Função que executa um teste com os parâmetros definidos 
 
     Parâmetros:
     	is_single(bool): Booleano que marca se a execução é única ou completa
     	device(str): Nome do device a ser utilizado
-    	qubits(int): Número de qubits no teste
+    	entries(int): Número de pares no teste
     	is_local(bool): Booleano que marca se a execução é local ou no backend da IBM
     	precision(float):  Valor de 0 a 1 que que representa a precisão mínima para 
     		que uma execução seja considerada um sucesso
@@ -204,13 +204,13 @@ def single_test(is_single, device, qubits, is_local, shots, precision):
 
 	start_time = time.time()
 
-	result = execute(qubits, is_single, shots, precision, is_local, device)
+	result = execute(entries, is_single, shots, precision, is_local, device)
 	
 	execution_time = time.time() - start_time
 
-	log(is_single, device, qubits, execution_time, shots, result, f)
+	log(is_single, device, entries, execution_time, shots, result, f)
 	
-def log(is_single, device, qubits, execution_time, shots, result, f):
+def log(is_single, device, entries, execution_time, shots, result, f):
 	""" Função que gera um log com os resultados do teste
 
     Parâmetros:
@@ -231,7 +231,7 @@ def log(is_single, device, qubits, execution_time, shots, result, f):
 		execution_type = "completa"
 
 	if result == 0:
-		f.write("Erro na execução " + execution_type + " com " + str(qubits) + " qubits. Duração: " + str(round(execution_time, 3)) + "segundos. Device: " + device + "\n")
+		f.write("Erro na execução " + execution_type + " com " + str(entries) + "pares. Duração: " + str(round(execution_time, 3)) + " segundos. Device: " + device + "\n")
 	else:
-		f.write(str(qubits) + " qubits " + execution_type + " -- OK. Precisão: " + str(result) + " Duração: " + str(round(execution_time, 3)) + "segundos. Device: " + device + "\n")
+		f.write(str(entries) + " pares " + execution_type + " -- OK. Precisão: " + str(result) + " Duração: " + str(round(execution_time, 3)) + " segundos. Device: " + device + "\n")
 

@@ -162,8 +162,8 @@ def grover_search_algorithm(n, entries, initial_state, variables, target, shots,
 
    
     transpiled_qc = transpile(qc, backend) # Faz o transpiling para o simulador escolhido
-    qobj = assemble(transpiled_qc) 
-    result = backend.run(qobj, shots = shots).result() # Executa o circuito 'shots' vezes
+    #qobj = assemble(transpiled_qc) 
+    result = backend.run(transpiled_qc, shots = shots).result() # Executa o circuito 'shots' vezes
 
     
 

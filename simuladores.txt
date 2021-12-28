@@ -18,7 +18,10 @@ Locais:
 IBM:
 
 'simulator_stabilizer' - não tem conjunto base de gates
-
+'simulator_mps' - rodou completo com 3qubits
+'simulator_extended_stabilizer' - efficiency bug pediram pra reportar
+'ibmq_qasm_simulator' - funciona ok porém timeout com 31 qubits
+'simulator_statevector' - 
 
 
 
