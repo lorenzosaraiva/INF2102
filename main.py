@@ -62,13 +62,30 @@ def full_tests(single_start, single_limit, single_shots, single_precision, compl
  		complete_precision(float): Valor de 0 a 1 que que representa a precisão mínima para que uma 
  			execução completa seja considerada um sucesso
 		is_local(bool): Booleano que marca se a execução é local ou no backend da IBM
-		simulator(str): String com o nome do simulador utilizado
+		device(str): String com o nome do simulador utilizado
 
     """
 	tests(single_start, single_limit, single_shots, single_precision, complete_start, complete_limit, complete_shots, complete_precision, is_local, device)
 
+def exe():
+	""" Função chamada pelo script exe.sh que lê do param.txt os parâmetros
+		e realiza os testes
+	"""
+	f = open("param.txt", "r")
+	single_start = int(f.readline())
+	single_limit = int(f.readline())
+	single_shots = int(f.readline())
+	single_precision = float(f.readline())
+	complete_start = int(f.readline())
+	complete_limit = int(f.readline())
+	complete_shots = int(f.readline())
+	complete_precision = float(f.readline())
+	is_local = f.readline()
+	device = str(f.readline()).rstrip("\n")
 
-#test(False, "simulator_statevector", 4, False)
-#test(True, "simulator_statevector", 4, False)
-step_tests(4, 8, 1000, 0.5, False, "simulator_statevector")
-#complete_tests(3, 5, 1000, 0.5, False, "simulator_statevector")
+	if is_local == "True":
+		is_local = True
+	else:
+		is_local = False
+
+	tests(single_start, single_limit, single_shots, single_precision, complete_start, complete_limit, complete_shots, complete_precision, is_local, device)
