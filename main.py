@@ -1,4 +1,7 @@
-from tests import tests, single_test
+from tests import tests, single_test, test_from_pairs
+from utils import binaryToDecimal
+
+import math
 
 def test(is_single, device, entries, is_local):
 	""" Função que executa um teste com os parâmetro definidos
@@ -71,7 +74,12 @@ def exe():
 	""" Função chamada pelo script exe.sh que lê do param.txt os parâmetros
 		e realiza os testes
 	"""
+
+	# Abre arquivo
 	f = open("param.txt", "r")
+
+
+	# Lê parâmetros
 	single_start = int(f.readline())
 	single_limit = int(f.readline())
 	single_shots = int(f.readline())
@@ -80,12 +88,97 @@ def exe():
 	complete_limit = int(f.readline())
 	complete_shots = int(f.readline())
 	complete_precision = float(f.readline())
-	is_local = f.readline()
+	is_local = str(f.readline()).rstrip("\n")
+
+	# Modificações para lidar com pequenas diferenças
 	device = str(f.readline()).rstrip("\n")
+
+	print(is_local)
 
 	if is_local == "True":
 		is_local = True
 	else:
 		is_local = False
 
+	print(type(is_local))
+	print(is_local)
+	print(device)
+
 	tests(single_start, single_limit, single_shots, single_precision, complete_start, complete_limit, complete_shots, complete_precision, is_local, device)
+
+def input_sequent(sequent, shots, precision, is_local, device):
+	""" Função que recebe um sequente e cria o circuito para guiar 
+		aplicação das regras de R-tensor
+	"""
+	print("Hello")
+	# Tira espaços desnecessários e transforma em lista
+	sequent = sequent.replace(' ', '')
+	sequent = sequent.replace('*', '')
+	sides = sequent.split('=')
+	left_side = list(sides[0])
+	right_side = list(sides[1])
+	
+	print(left_side)
+	print(right_side)
+
+	left_index = 0
+	pairs = []
+	for left_element in left_side:
+		if left_element.isalnum() == False:
+			print(left_element) 
+			print("Elementos inválidos no lado esquerdo. Utilizar somente caracteres alfanuméricos como cláusulas atômicas e * como o tensor.")
+			exit()
+
+		right_index = 0
+		for right_element in right_side:
+			if right_element.isalnum() == False:
+				print("Elementos inválidos no lado direito. Utilizar somente caracteres alfanuméricos como cláusulas atômicas e * como o tensor.")
+				exit()
+
+			if right_element == left_element:
+				new_pair = [left_index, right_index]
+				pairs.append(new_pair)
+				break
+
+			right_index = right_index + 1
+
+		left_index = left_index + 1
+
+	print(pairs)
+
+	result = test_from_pairs(pairs, shots, precision, is_local, device)
+
+	print("Resultado:")
+	print(result)
+
+	# Calculo quantos dígitos tem cada passo
+	n = math.ceil(math.log(len(pairs), 2))
+
+	# Usa o resultado para verficar se o sequente é uma prova válida
+
+	counted = 0
+
+	while counted < len(pairs):
+		print("Loop")
+		current_start = len(result) - (counted + 1) * n 
+		binary = result[current_start: current_start + n]
+		print(current_start)
+		print(binary)
+		answer = binaryToDecimal(binary)
+		print(answer)
+
+		if left_side[answer] != right_side[counted]:
+			print("Não é uma prova válida.")
+			exit()
+
+		counted = counted + 1
+
+	if len(pairs) < len(left_side):
+		print("Não é uma prova válida.")
+		exit()
+
+	print("Prova válida.")
+
+
+
+#input_sequent("A * B * C = C * A * B", 1000, 0.5, True, "qasm_simulator")

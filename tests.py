@@ -10,7 +10,7 @@ import time
 import random
 import math
 
-def execute(entries, is_single, shots, threshold, is_local, device):
+def execute(entries, is_single, shots, threshold, is_local, device, pairs = []):
 	"""Função que gera aleatoriamente um conjunto de pares e executa o Grover
 	
 	Parâmetros:
@@ -49,15 +49,22 @@ def execute(entries, is_single, shots, threshold, is_local, device):
 	random.shuffle(l1)
 	random.shuffle(l2)
 
-	# Cria os pares aleatórios
-	pairs = []
-	for i in range(entries):
-		a = l1.pop()
-		b = l2.pop()
-		pairs.append([a, b])
+	print("aqui")
+	print(pairs)
+
+	if len(pairs) == 0:
+		print("Entrou")
+		# Cria os pares aleatórios
+		for i in range(entries):
+			a = l1.pop()
+			b = l2.pop()
+			pairs.append([a, b])
 
 	# Calcula o índice de cada par no vetor de estado
 	indexes = []
+
+	print(entries)
+	print(len(pairs))
 
 	for i in range(entries):
 		indexes.append(pairs[i][0] * power + pairs[i][1])
@@ -92,10 +99,11 @@ def execute(entries, is_single, shots, threshold, is_local, device):
 	print(answer)
 	print(accuracy)
 
+	# Caso seja correto, retorna a resposta e a precisão
 	if top_result == answer:
-		return accuracy
+		return accuracy, top_result
 	else:
-		return 0
+		return 0, False
 
 def compute_answer(answer_dict, pairs, is_single, target, n):  	
 	"""Função que verifica a resposta correta a partir dos pares
@@ -171,7 +179,7 @@ def tests(single_start, single_limit, single_shots, single_precision, complete_s
 
 		start_time = time.time()
 
-		result = execute(atomics, True, single_shots, single_precision, is_local, device)
+		result, answer = execute(atomics, True, single_shots, single_precision, is_local, device, [])
 		
 		execution_time = time.time() - start_time
 
@@ -184,7 +192,7 @@ def tests(single_start, single_limit, single_shots, single_precision, complete_s
 
 		start_time = time.time()
 		
-		result = execute(atomics, False, complete_shots, complete_precision, is_local, device)
+		result, answer = execute(atomics, False, complete_shots, complete_precision, is_local, device, [])
 		
 		execution_time = time.time() - start_time
 
@@ -213,7 +221,7 @@ def single_test(is_single, device, entries, is_local, shots, precision):
 
 	start_time = time.time()
 
-	result = execute(entries, is_single, shots, precision, is_local, device)
+	result, answer = execute(entries, is_single, shots, precision, is_local, device)
 	
 	execution_time = time.time() - start_time
 
@@ -245,7 +253,6 @@ def log(is_single, device, entries, execution_time, shots, result, f, precision)
 		f.write(str(entries) + " pares " + execution_type + " Resultado correto porém precisão abaixo do limte. Precisão: " + str(result) + " Duração: " + str(round(execution_time, 3)) + " segundos. Device: " + device + "\n")
 	else:
 		f.write(str(entries) + " pares " + execution_type + " -- OK. Precisão: " + str(result) + " Duração: " + str(round(execution_time, 3)) + " segundos. Device: " + device + "\n")
-
 
 def validate_device(is_local, device):
 	""" Função que verifica se o device escolhido é valido
@@ -287,3 +294,36 @@ def validate_device(is_local, device):
 			return True
 		else:
 			return False
+
+def test_from_pairs(pairs, shots, precision, is_local, device):
+	""" Função que executa um teste com a partir de pares pré-definidos 
+
+	Parâmetros:
+		pairs([(int, int)]): Lista de pares que representam o sequente
+		shots(int): Número de execuções do circuito em cada teste 
+		precision(float): Numero entre 0 e 1 que marca a precisão mínima para que a
+			execução seja considerada um sucesso
+		is_local(bool): Booleano que marca se a execução é local ou no backend da IBM
+		device(str): Nome do device a ser utilizado
+
+	"""
+
+	if validate_device(is_local, device) == False: 
+		print("Device escolhido não é válido.")
+		return
+
+	is_single = False
+	entries = len(pairs)
+
+	f = open("test_results.txt", "a")
+
+	start_time = time.time()
+
+	result, answer = execute(entries, is_single, shots, precision, is_local, device, pairs)
+	
+	execution_time = time.time() - start_time
+
+	log(is_single, device, entries, execution_time, shots, result, f, precision)
+
+	return answer
+

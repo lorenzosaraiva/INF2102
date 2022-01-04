@@ -6,6 +6,7 @@ import math
 
 from initialize import Initialize
 from utils import reverse, to_bin
+from encode import Encoding
 
 from qiskit import Aer, assemble, transpile
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
@@ -101,12 +102,26 @@ def grover_search_algorithm(n, entries, initial_state, variables, target, shots,
 
     """
 
+
+
     # Cria conjunto de gates |00..0> -> |initial_state> e |initial_state> -> |00..0> 
+
+
+    ##### Método presente no módulo encode.py #####
+    # enc = Encoding(initial_state)
+ 
+    # prepare = enc.qcircuit
+
+    # uncompute = prepare.inverse()
+    ##############################################
+
+    ##### Método presente no módulo initialize.py #####
     init_instruction = Initialize(initial_state)
 
     uncompute = init_instruction.gates_to_uncompute()
 
     prepare = uncompute.inverse()
+    ##############################################
     
     size = n * 2
 
