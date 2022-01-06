@@ -93,24 +93,29 @@ def exe():
 	# Modificações para lidar com pequenas diferenças
 	device = str(f.readline()).rstrip("\n")
 
-	print(is_local)
 
 	if is_local == "True":
 		is_local = True
 	else:
 		is_local = False
 
-	print(type(is_local))
-	print(is_local)
-	print(device)
-
 	tests(single_start, single_limit, single_shots, single_precision, complete_start, complete_limit, complete_shots, complete_precision, is_local, device)
 
 def input_sequent(sequent, shots, precision, is_local, device):
 	""" Função que recebe um sequente e cria o circuito para guiar 
 		aplicação das regras de R-tensor
+
+		Parâmetros:
+			sequent(str): String com o sequente a ser testado
+			shots(int): Número de execuções em cada teste
+			precision(float): Valor de 0 a 1 que marca a precisão mínima
+				para um teste ser considerado de sucesso
+			is_local(bool): Booleano que define se a execução é local
+				ou no backend da IBM
+			device(str): Nome do simulador ou computador quântico no qual
+				o programa será executado
 	"""
-	print("Hello")
+
 	# Tira espaços desnecessários e transforma em lista
 	sequent = sequent.replace(' ', '')
 	sequent = sequent.replace('*', '')
@@ -118,14 +123,11 @@ def input_sequent(sequent, shots, precision, is_local, device):
 	left_side = list(sides[0])
 	right_side = list(sides[1])
 	
-	print(left_side)
-	print(right_side)
 
 	left_index = 0
 	pairs = []
 	for left_element in left_side:
 		if left_element.isalnum() == False:
-			print(left_element) 
 			print("Elementos inválidos no lado esquerdo. Utilizar somente caracteres alfanuméricos como cláusulas atômicas e * como o tensor.")
 			exit()
 
@@ -144,12 +146,7 @@ def input_sequent(sequent, shots, precision, is_local, device):
 
 		left_index = left_index + 1
 
-	print(pairs)
-
 	result = test_from_pairs(pairs, shots, precision, is_local, device)
-
-	print("Resultado:")
-	print(result)
 
 	# Calculo quantos dígitos tem cada passo
 	n = math.ceil(math.log(len(pairs), 2))
@@ -159,13 +156,9 @@ def input_sequent(sequent, shots, precision, is_local, device):
 	counted = 0
 
 	while counted < len(pairs):
-		print("Loop")
 		current_start = len(result) - (counted + 1) * n 
 		binary = result[current_start: current_start + n]
-		print(current_start)
-		print(binary)
 		answer = binaryToDecimal(binary)
-		print(answer)
 
 		if left_side[answer] != right_side[counted]:
 			print("Não é uma prova válida.")
@@ -180,5 +173,6 @@ def input_sequent(sequent, shots, precision, is_local, device):
 	print("Prova válida.")
 
 
-
+#test(False, "simulator_mps", 12, False)
 #input_sequent("A * B * C = C * A * B", 1000, 0.5, True, "qasm_simulator")
+exe()

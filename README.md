@@ -12,6 +12,7 @@ Projeto do Programa
 O programa é composto pelos seguintes módulos:
 
 - initialize.py - Módulo do Qiskit para inicializar estados quânticos arbitrários com algumas modificações. 
+- encode.py - Módulo desenvolvido por  Araujo, I., Park, D., Petruccione, F. and da Silva, A.J. para o paper A divide-and-conquer algorithm for quantum state 		preparation que tem uma forma alternativa de inicializar estados quânticos arbitrários
 - grover.py - Contém a parte principal, onde é feita a montagem e execução do circuito do Grover.  
 - tests.py - Contém uma sequência automatizada dos testes 
 - utils.py - Contém as funções auxiliares
@@ -30,9 +31,9 @@ Além dos dois tipos de teste, existem 3 formas de testar: simular localmente, s
 
 Foram feitos os seguintes testes:
 
-- Testes únicos de 4 a 32 pares, execução local no 'qasm_simulator'
-- Testes completos de 4 a 10 pares, execução no backend da IBM no 'simulator_mps'
-- Testese únicos de 4 pares nos computadores quânticos da IBM.
+- Testes únicos de 4 a 32 pares, execução local no 'qasm_simulator'.
+- Testes completos de 4 a 12 pares, execução no backend da IBM no 'simulator_mps'. 
+- Testes únicos de 4 pares nos computadores quânticos da IBM.
 
 Documentação para o Usuário:
 

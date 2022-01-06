@@ -184,6 +184,4 @@ def grover_search_algorithm(n, entries, initial_state, variables, target, shots,
 
     answer_dict = dict(sorted(result.get_counts().items(), key=lambda item: item[1])) # Coleta e ordena os resultados da execução
 
-    # print(qc)
-    # print(answer_dict)
     return answer_dict

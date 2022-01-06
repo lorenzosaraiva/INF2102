@@ -49,11 +49,7 @@ def execute(entries, is_single, shots, threshold, is_local, device, pairs = []):
 	random.shuffle(l1)
 	random.shuffle(l2)
 
-	print("aqui")
-	print(pairs)
-
 	if len(pairs) == 0:
-		print("Entrou")
 		# Cria os pares aleatórios
 		for i in range(entries):
 			a = l1.pop()
@@ -63,8 +59,6 @@ def execute(entries, is_single, shots, threshold, is_local, device, pairs = []):
 	# Calcula o índice de cada par no vetor de estado
 	indexes = []
 
-	print(entries)
-	print(len(pairs))
 
 	for i in range(entries):
 		indexes.append(pairs[i][0] * power + pairs[i][1])
@@ -89,15 +83,6 @@ def execute(entries, is_single, shots, threshold, is_local, device, pairs = []):
 	# Pega o resultado mais frequente e sua frequência
 	top_result = list(answer_dict.keys())[-1]
 	accuracy = list(answer_dict.values())[-1]/shots
-
-	if accuracy > 1.0:
-		print(answer_dict)
-
-	print("Testes:")
-	print(top_result)
-	print(target)
-	print(answer)
-	print(accuracy)
 
 	# Caso seja correto, retorna a resposta e a precisão
 	if top_result == answer:
