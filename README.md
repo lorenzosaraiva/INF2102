@@ -4,7 +4,7 @@ INF2102 - PROJETO FINAL DE PROGRAMACAO
 
 Especificação do programa
 	
-O programa é um algoritmo constrói um circuito quântico para realizar a verficação de uma prova em Lógica Linear multiplicativa de tensores. A partir de um sequente, o programa constrói uma database quântica entrelaçada que representa os pares de cláusulas atômicas, e depois utiliza o Grover Search Algorithm (GSA) para encontrar as divisões corretas na aplicação das regras do cálculo de sequentes. O programa foi implementado na linguagem Python e utiliza o framework open source de computação quântica da IBM, o Qiskit.
+O programa é um algoritmo constrói um circuito quântico para realizar a verficação de uma prova em Lógica Linear multiplicativa de tensores. A partir de um sequente, o programa constrói uma database quântica entrelaçada que representa os pares de cláusulas atômicas, e depois utiliza o Grover Search Algorithm (GSA) para encontrar as divisões corretas na aplicação das regras do cálculo de sequentes. O programa foi implementado na linguagem Python e utiliza o framework open source de computação quântica da IBM, o Qiskit. A complexidade do algoritmo é de O(N log N), onde N é o número de pares de cláusulas atômicas na prova, que é melhor do que a complexidade do algoritmo clássico de O(2^N).
 
 
 Projeto do Programa
@@ -17,6 +17,9 @@ O programa é composto pelos seguintes módulos:
 - tests.py - Contém uma sequência automatizada dos testes 
 - utils.py - Contém as funções auxiliares
 - main.py - Módulo principal que será utilizado pelo usuário
+
+
+O enconde.py e o initialize.py tem funções equivalentes - preparar um estado quântico arbitrário. O initialize.py tem uma complexidade teórica de O(2^n), onde n é o número de qubits, o que inviabilizaria o ganho teórico do algoritmo. O encode.py utiliza um método desenvolvido em 2021, com complexidade de O(n), que permite o algoritmo ter um ganho de complexidade. Entretanto, quando aplicados nos testes, o encode.py tem uma demora superior. Isso ainda esta sendo investigado, mas possíveis causas são a otimização do initialize.py por ser um módulo padrão do próprio Qiskit ou, já que a complexidade é assimptótica, é possível que o initialize.py tenha uma melhor performance em valores menores do que o encode.py 
 
 Roteiro de testes:
 
